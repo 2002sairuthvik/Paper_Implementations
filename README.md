@@ -1,2 +1,2 @@
-# Paper_Implementations
-Trying to build the models from sctrach from the famous reserach papers
+# Research_Paper_Architectures
+Trying to re-build the architectures from the research papers
