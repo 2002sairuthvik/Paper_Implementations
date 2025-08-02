@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import math
 from torch import functional as F
-# dataset we will be using to train the model -> cfilt/iitb-english-hindi
+# the dataset we will be using to train the model -> cfilt/iitb-english-hindi
 
 class InputEmbeddings(nn.Module):
     
@@ -27,16 +27,16 @@ class PositionalEncodding(nn.Module):
         self.seq_len = seq_len
         self.dropout = nn.Dropout(dropout)
 
-        # mateix of shape (seq_len,d_model) to accormodate each word in a sequence
+        # matrix of shape (seq_len,d_model) to accomodate each word in a sequence
         pe = torch.zeros(seq_len,d_model)
         # creating a vector of shape (seq_len,1)
         position = torch.arange(0,seq_len, dtype = torch.float).unsqueeze(1) # numerator term as per paper's formula
-        div_term = torch.exp(torch.arange(0,d_model,2).float() * (-math.log(10000.0)/d_model)) # dennominator term as per paper's formula
-        # aplying sin to the even and cos to the odd position
+        div_term = torch.exp(torch.arange(0,d_model,2).float() * (-math.log(10000.0)/d_model)) # denominator term as per paper's formula
+        # applying sin to the even and cos to the odd position
         pe[:,0::2] = torch.sin(position * div_term)
         pe[:,1::2] = torch.cos(position * div_term)
 
-        # chaing shape of positional encoding to accomodate the batch dimension
+        # changing shape of positional encoding to accomodate the batch dimension
         pe = pe.unsqueeze(0) # 1,seq_len, d_model
         
         # It tells PyTorch "this tensor pe is part of the model, but it is not a learnable parameter."
@@ -51,7 +51,7 @@ class LayerNormalisation(nn.Module):
     def __init__(self, eps: float = 10**-6) -> None:
         super().__init__()
         self.eps = eps
-        self.alpha = nn.Parameter(torch.ones(1)) # it iwill get multiplied
+        self.alpha = nn.Parameter(torch.ones(1)) # it will get multiplied
         self.bias = nn.Parameter(torch.ones(1)) # it will get added
 
     def forward(self, x):
@@ -118,7 +118,7 @@ class MultiHeadAttentionBlock(nn.Module):
         x, self.attention_score = MultiHeadAttentionBlock.attention(query, key, value, mask, self.dropout)
 
         # reverting back to original shape of input vector
-        # batch,h , seq_len, d_k -> batch,seq_len,h,d_k -> batch_size, seq_len,d_model
+        # batch,h(head_Size) , seq_len, d_k -> batch,seq_len,h,d_k -> batch_size, seq_len,d_model
         x = x.transpose(1,2).contiguous().view(x.shape[0], -1, self.h * self.d_k)
 
         return self.w_o(x)
@@ -132,7 +132,7 @@ class ResidualConnection(nn.Module):
     def forward(self, x, sublayer):
         return x + self.dropout(sublayer(self.norm(x)))
     
-class EncoderBloack(nn.Module):
+class EncoderBlock(nn.Module):
     def __init__(self,
                  self_attention_block: MultiHeadAttentionBlock,
                  feed_forward_block: FeedForwardBlock,
@@ -257,7 +257,7 @@ def build_transformer(src_vocab_size: int,
     for _ in range(N):
         encoder_self_attention_block = MultiHeadAttentionBlock(d_model, h, dropout)
         feed_forward_block = FeedForwardBlock(d_model, d_ff, dropout)
-        encoder_block = EncoderBloack(encoder_self_attention_block, feed_forward_block,dropout)
+        encoder_block = EncoderBlock(encoder_self_attention_block, feed_forward_block,dropout)
         encoder_blocks.append(encoder_block)
 
     # creating the decoder block
@@ -273,13 +273,13 @@ def build_transformer(src_vocab_size: int,
     encoder = Encoder(nn.ModuleList(encoder_blocks))
     decoder = Decoder(nn.ModuleList(decoder_blocks))
 
-    # adding the projectiong layer to the transformer
+    # adding the projectioning layer to the transformer
     projection_layer = ProjectionLayer(d_model, tgt_vocab_size)
 
     # create the complete transformer
     transformer = Transformer(encoder, decoder, src_embed, tgt_embed, src_pos, tgt_pos, projection_layer)
 
-    # intitalising the paramters
+    # intitalising the parameters
     for p in transformer.parameters():
         if p.dim() > 1:
             nn.init.xavier_uniform_(p)
